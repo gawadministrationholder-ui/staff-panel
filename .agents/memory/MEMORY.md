@@ -1,0 +1,2 @@
+- [Roman Parthia staff panel stack](roman-parthia-stack.md) — Express session auth + drizzle node-postgres; pg must be in server dependencies not just devDependencies for esbuild
+- [Rank-gated routes](roman-parthia-rank-gates.md) — rank 8+ staff directory, rank 7+ moderation, rank 140+ Roblox mod log write, session userId checked via requireAuth middleware

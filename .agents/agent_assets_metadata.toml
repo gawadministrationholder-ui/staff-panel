@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "1_LSXnZSJgzMIH-Aq2J1s"
+uri = "file://artifacts/staff-panel/src/assets/brand-logo.png"
+type = "image"
+title = "brand-logo.png"
+
+[[outputs]]
+id = "Q52qnlkPQBzPpiHdKCUfp"
+uri = "file://roman-parthia-staff-panel.tar.gz"
+type = "unspecified"
+title = "Roman Parthia Staff Panel — Project Files"

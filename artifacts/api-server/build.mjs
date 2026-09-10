@@ -35,6 +35,11 @@ async function buildAll() {
       "canvas",
       "bcrypt",
       "argon2",
+      // connect-pg-simple reads its own table.sql file at runtime using a
+      // path relative to its package folder — bundling it strips that file
+      // out, causing an ENOENT at runtime. Keep it external so it's
+      // required from node_modules as-is instead.
+      "connect-pg-simple",
       "fsevents",
       "re2",
       "farmhash",

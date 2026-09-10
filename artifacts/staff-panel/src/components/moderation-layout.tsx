@@ -98,9 +98,9 @@ export function ModerationLayout({ children }: ModerationLayoutProps) {
         <Sidebar data-testid="sidebar-moderation" className="border-r border-border">
           <SidebarHeader className="border-b border-border p-4">
             <div className="flex items-center gap-3">
-              <img src={brandLogo} alt="Roman Parthia Remastered" className="w-10 h-10" />
+              <img src={brandLogo} alt="Galaxy at War" className="w-10 h-10" />
               <div className="space-y-0.5">
-                <h1 className="font-display text-sm font-bold text-amber-500">Roman Parthia Remastered</h1>
+                <h1 className="font-display text-sm font-bold text-amber-500">Galaxy at War</h1>
                 <p className="text-xs text-muted-foreground">Administration Portal</p>
               </div>
             </div>
@@ -246,7 +246,7 @@ export function ModerationLayout({ children }: ModerationLayoutProps) {
 
           <SidebarFooter className="border-t border-border p-4">
             <p className="text-xs text-blue-400 text-center">
-              All actions are logged and processed by Roman Parthia Remastered Administrators
+              All actions are logged and processed by Galaxy at War Administrators
             </p>
           </SidebarFooter>
         </Sidebar>

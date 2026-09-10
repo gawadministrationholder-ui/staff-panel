@@ -42,7 +42,7 @@ export default function CompleteProfile() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({
         title: "Profile Complete!",
-        description: "Your account is now set up. Welcome to Roman Parthia Remastered!",
+        description: "Your account is now set up. Welcome to Galaxy at War!",
       });
       setLocation("/");
     },
@@ -140,7 +140,7 @@ export default function CompleteProfile() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <img src={brandLogo} alt="Roman Parthia Remastered" className="w-16 h-16 rounded-md" />
+            <img src={brandLogo} alt="Galaxy at War" className="w-16 h-16 rounded-md" />
           </div>
           <CardTitle className="text-2xl font-bold">Complete Your Profile</CardTitle>
           <CardDescription>

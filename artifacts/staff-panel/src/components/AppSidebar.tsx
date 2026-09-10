@@ -67,7 +67,7 @@ export default function AppSidebar() {
             )}
           </div>
         </div>
-        <h2 className="font-display font-bold text-lg">Roman Parthia Remastered</h2>
+        <h2 className="font-display font-bold text-lg">Galaxy at War</h2>
         {user?.suspended && (
           <div className="mt-2 rounded-md border border-red-600/50 bg-red-900/30 px-3 py-2 text-xs text-red-200">
             <span className="font-semibold">Access suspended.</span> Staff features are unavailable.

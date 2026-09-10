@@ -47,3 +47,64 @@ export async function getRobloxGroupRole(userId: string, groupId: string): Promi
   } catch {}
   return { rank: 0, name: "" };
 }
+
+export interface RobloxGroupRoleListing {
+  id: number;
+  name: string;
+  rank: number;
+  memberCount: number;
+}
+
+/** Lists every role configured on a Roblox group (id, name, rank, member count). */
+export async function getRobloxGroupRoles(groupId: string): Promise<RobloxGroupRoleListing[]> {
+  try {
+    const response = await fetch(`https://groups.roblox.com/v1/groups/${groupId}/roles`);
+    if (!response.ok) return [];
+    const data = (await response.json()) as { roles: RobloxGroupRoleListing[] };
+    return data.roles ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export interface RobloxGroupMember {
+  userId: number;
+  username: string;
+  displayName: string;
+}
+
+/** Lists every member holding a specific role in a Roblox group (paginated internally). */
+export async function getRobloxGroupRoleMembers(groupId: string, roleId: number): Promise<RobloxGroupMember[]> {
+  const members: RobloxGroupMember[] = [];
+  let cursor = "";
+  try {
+    do {
+      const url = `https://groups.roblox.com/v1/groups/${groupId}/roles/${roleId}/users?limit=100${cursor ? `&cursor=${cursor}` : ""}`;
+      const response = await fetch(url);
+      if (!response.ok) break;
+      const data = (await response.json()) as {
+        data: { userId: number; username: string; displayName: string }[];
+        nextPageCursor: string | null;
+      };
+      members.push(...data.data);
+      cursor = data.nextPageCursor ?? "";
+    } while (cursor);
+  } catch {}
+  return members;
+}
+
+/** Fetches avatar headshot URLs for many users in one request. */
+export async function getRobloxAvatarsBatch(userIds: number[]): Promise<Record<number, string>> {
+  const result: Record<number, string> = {};
+  if (userIds.length === 0) return result;
+  try {
+    const response = await fetch(
+      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userIds.join(",")}&size=150x150&format=Png&isCircular=false`,
+    );
+    if (response.ok) {
+      const data = (await response.json()) as { data: { targetId: number; imageUrl: string }[] };
+      for (const item of data.data) result[item.targetId] = item.imageUrl;
+    }
+  } catch {}
+  return result;
+}

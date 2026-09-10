@@ -69,7 +69,7 @@ export default function PunishmentDocument() {
         <CardHeader className="pb-2 border-b bg-white dark:bg-slate-950">
           <div className="text-center">
             <h2 className="text-lg font-bold mb-1">ADMINISTRATIVE PUNISHMENT</h2>
-            <p className="text-xs text-gray-600 dark:text-gray-400">ROMAN PARTHIA STAFF & MODERATION TEAM</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">GALAXY AT WAR STAFF & MODERATION TEAM</p>
           </div>
         </CardHeader>
 
@@ -123,7 +123,7 @@ export default function PunishmentDocument() {
           <div className="pt-4 border-t text-sm">
             <p className="font-semibold mb-2">Sincerely,</p>
             <p className="text-gray-700 dark:text-gray-300 font-semibold">{punishment.issuedBy}</p>
-            <p className="text-gray-600 dark:text-gray-400">Roman Parthia Staff Administration</p>
+            <p className="text-gray-600 dark:text-gray-400">Galaxy at War Staff Administration</p>
           </div>
 
           <div className="pt-4 text-xs text-muted-foreground text-center">

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
@@ -108,6 +109,7 @@ function RequireCompleteProfile({ children }: { children: React.ReactNode }) {
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
     await logout();
@@ -119,20 +121,34 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <header className="flex items-center justify-between px-6 py-3 bg-black text-white sticky top-0 z-20 border-b border-amber-500/20">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center text-xs font-display font-bold text-primary">
-            RP
+            GAW
           </div>
           <h1 className="font-display text-sm font-semibold tracking-wide">
-            ROMAN PARTHIA REMASTERED | DASHBOARD
+            GALAXY AT WAR | DASHBOARD
           </h1>
         </div>
         <div className="flex items-center gap-6 text-sm">
           {user && (
-            <button
-              onClick={() => setLocation("/moderation/discord")}
-              className="hover:text-amber-500 transition-colors cursor-pointer"
-            >
-              Moderation Network
-            </button>
+            <>
+              <button
+                onClick={() => toast({ title: "Coming soon", description: "The Jedi Order page isn't set up yet." })}
+                className="hover:text-amber-500 transition-colors cursor-pointer"
+              >
+                The Jedi Order
+              </button>
+              <button
+                onClick={() => toast({ title: "Coming soon", description: "The Sith Order page isn't set up yet." })}
+                className="hover:text-amber-500 transition-colors cursor-pointer"
+              >
+                The Sith Order
+              </button>
+              <button
+                onClick={() => toast({ title: "Coming soon", description: "The Community page isn't set up yet." })}
+                className="hover:text-amber-500 transition-colors cursor-pointer"
+              >
+                Community
+              </button>
+            </>
           )}
           {user ? (
             <DropdownMenu>

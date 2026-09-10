@@ -50,7 +50,7 @@ interface PolicyAcknowledgment {
   viewDuration: number | null;
 }
 
-const STAFF_OATH = `I solemnly pledge my loyalty to Roman Parthia Remastered and to its people. I shall uphold the law with fairness, guard the community with vigilance, and carry myself with the honour befitting the Empire. I will serve without favour, act without malice, and hold the trust placed in me as sacred. By my hand and by my seal, I swear this oath.`;
+const STAFF_OATH = `I solemnly pledge my loyalty to Galaxy at War and to its people. I shall uphold the law with fairness, guard the community with vigilance, and carry myself with the honour befitting this galaxy. I will serve without favour, act without malice, and hold the trust placed in me as sacred. By my hand and by my seal, I swear this oath.`;
 
 // Wax seal element — stamped, embossed look
 function WaxSeal({ size = 64, label = "SPQR", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
@@ -161,10 +161,10 @@ export default function StaffHub() {
           <WaxSeal size={48} />
           <div>
             <h1 className="font-display text-2xl md:text-3xl font-bold tracking-wide">Staff Hub</h1>
-            <p className="text-muted-foreground text-sm">Roman Parthia Remastered · Central Command</p>
+            <p className="text-muted-foreground text-sm">Galaxy at War · Central Command</p>
           </div>
         </div>
-        <img src={brandLogo} alt="Roman Parthia Administration" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+        <img src={brandLogo} alt="Galaxy at War Administration" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -220,7 +220,7 @@ export default function StaffHub() {
                 <>
                   <WaxSeal size={72} sworn={false} label="?" />
                   <p className="text-xs text-muted-foreground">
-                    You have not yet sworn the staff oath. All staff are expected to take the oath upon joining the Empire's service.
+                    You have not yet sworn the staff oath. All staff are expected to take the oath upon joining.
                   </p>
                   <Button
                     className="w-full bg-red-800 hover:bg-red-700 text-white font-display tracking-wide"

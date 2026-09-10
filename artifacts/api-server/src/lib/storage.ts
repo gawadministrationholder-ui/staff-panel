@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import * as schema from "@workspace/db";
 import type {
   User,
@@ -290,6 +290,48 @@ export class PostgresStorage {
       .update(schema.accessChangeRequests)
       .set({ status, reviewedBy, reviewedAt: new Date(), rejectionReason: rejectionReason ?? null })
       .where(eq(schema.accessChangeRequests.id, id));
+  }
+
+  // ── Org Chart Descriptions ──────────────────────────────────────────────
+
+  async getAllOrgChartDescriptions(): Promise<{ key: string; description: string }[]> {
+    const rows = await db
+      .select({ key: schema.orgChartDescriptions.key, description: schema.orgChartDescriptions.description })
+      .from(schema.orgChartDescriptions);
+    return rows;
+  }
+
+  async upsertOrgChartDescription(key: string, description: string): Promise<void> {
+    await db
+      .insert(schema.orgChartDescriptions)
+      .values({ key, description, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: schema.orgChartDescriptions.key,
+        set: { description, updatedAt: new Date() },
+      });
+  }
+
+  // ── Staff Bios ───────────────────────────────────────────────────────────
+
+  async getStaffBios(robloxUserIds: string[]): Promise<Record<string, string>> {
+    if (robloxUserIds.length === 0) return {};
+    const rows = await db
+      .select({ robloxUserId: schema.staffBios.robloxUserId, bio: schema.staffBios.bio })
+      .from(schema.staffBios)
+      .where(inArray(schema.staffBios.robloxUserId, robloxUserIds));
+    const result: Record<string, string> = {};
+    for (const row of rows) result[row.robloxUserId] = row.bio;
+    return result;
+  }
+
+  async upsertStaffBio(robloxUserId: string, bio: string): Promise<void> {
+    await db
+      .insert(schema.staffBios)
+      .values({ robloxUserId, bio, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: schema.staffBios.robloxUserId,
+        set: { bio, updatedAt: new Date() },
+      });
   }
 }
 

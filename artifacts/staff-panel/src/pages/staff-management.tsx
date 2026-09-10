@@ -519,7 +519,7 @@ export default function StaffManagement() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h2 className="font-display text-lg font-bold text-center tracking-wide">ADMINISTRATIVE PUNISHMENT</h2>
-                  <p className="text-xs text-amber-200/80 text-center">ROMAN PARTHIA STAFF &amp; MODERATION TEAM</p>
+                  <p className="text-xs text-amber-200/80 text-center">GALAXY AT WAR STAFF &amp; MODERATION TEAM</p>
                 </div>
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/10" onClick={() => setShowStrikeForm(false)} data-testid="button-close-strike-form">
                   <X className="w-4 h-4" />

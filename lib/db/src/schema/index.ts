@@ -288,3 +288,21 @@ export const insertAccessChangeRequestSchema = createInsertSchema(accessChangeRe
 
 export type InsertAccessChangeRequest = z.infer<typeof insertAccessChangeRequestSchema>;
 export type AccessChangeRequest = typeof accessChangeRequests.$inferSelect;
+
+// Editable job-description blurb per org chart position. Structure/hierarchy
+// of the chart itself is defined in code (see routes/org-chart.ts); only the
+// description text is stored here, editable from Staff Management.
+export const orgChartDescriptions = pgTable("org_chart_descriptions", {
+  key: text("key").primaryKey(),
+  description: text("description").notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Personal bio per Roblox user, shown in the slide-in panel when their org
+// chart card is clicked. Keyed by Roblox user ID (not the site's own user
+// id) since many people shown on the chart may not have a site account.
+export const staffBios = pgTable("staff_bios", {
+  robloxUserId: text("roblox_user_id").primaryKey(),
+  bio: text("bio").notNull().default(""),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

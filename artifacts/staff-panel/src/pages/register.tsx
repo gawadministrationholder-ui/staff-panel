@@ -65,9 +65,9 @@ export default function Register() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-3 mb-4">
-            <img src={brandLogo} alt="Roman Parthia Remastered" className="w-12 h-12 rounded-md" />
+            <img src={brandLogo} alt="Galaxy at War" className="w-12 h-12 rounded-md" />
             <div>
-              <CardTitle className="font-display text-2xl font-bold">Roman Parthia Remastered</CardTitle>
+              <CardTitle className="font-display text-2xl font-bold">Galaxy at War</CardTitle>
             </div>
           </div>
           <CardDescription>Create your account</CardDescription>

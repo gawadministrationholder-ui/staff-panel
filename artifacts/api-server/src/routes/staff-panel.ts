@@ -62,7 +62,7 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     req.session.userId = user.id;
     await new Promise<void>((resolve, reject) => req.session.save((err) => err ? reject(err) : resolve()));
     const { password, ...safe } = user;
-    res.json(safe);
+    res.json({ ...safe, sessionToken: req.sessionID });
   } catch (error: any) {
     logger.error({ error }, "Registration error");
     res.status(400).json({ error: error.message || "Registration failed" });
@@ -87,7 +87,7 @@ router.post("/auth/login", async (req: Request, res: Response) => {
 
     const updated = await storage.getUser(user.id);
     const { password: pwd, ...safe } = updated!;
-    res.json({ ...safe, hasPassword: !!(pwd?.trim().length) });
+    res.json({ ...safe, hasPassword: !!(pwd?.trim().length), sessionToken: req.sessionID });
   } catch (error: any) {
     logger.error({ error }, "Login error");
     res.status(500).json({ error: "Login failed" });
@@ -112,7 +112,7 @@ router.post("/auth/login/staff-id", async (req: Request, res: Response) => {
 
     const updated = await storage.getUser(user.id);
     const { password: pwd, ...safe } = updated!;
-    res.json({ ...safe, hasPassword: !!(pwd?.trim().length) });
+    res.json({ ...safe, hasPassword: !!(pwd?.trim().length), sessionToken: req.sessionID });
   } catch (error: any) {
     logger.error({ error }, "Staff ID login error");
     res.status(500).json({ error: "Login failed" });

@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "./queryClient";
+import { apiRequest, getQueryFn, setSessionToken } from "./queryClient";
 
 interface User {
   id: string;
@@ -36,14 +36,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
+  // Uses the shared getQueryFn so this respects VITE_API_URL (the request
+  // actually goes to the backend, not the frontend's own domain) and sends
+  // the fallback bearer token — both were missing from a previous inline
+  // fetch() here, which meant this check silently never worked correctly
+  // in the cross-domain (Firebase + Render) setup.
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
-      if (res.status === 401) return null;
-      if (!res.ok) throw new Error("Failed to fetch user");
-      return await res.json();
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     refetchInterval: 30 * 1000,
   });
@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/login", { email, password });
       return await res.json();
     },
-    onSuccess: (data) => { queryClient.setQueryData(["/api/auth/me"], data); },
+    onSuccess: (data) => {
+      setSessionToken(data?.sessionToken);
+      queryClient.setQueryData(["/api/auth/me"], data);
+    },
   });
 
   const staffIdLoginMutation = useMutation({
@@ -61,7 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/login/staff-id", { staffId });
       return await res.json();
     },
-    onSuccess: (data) => { queryClient.setQueryData(["/api/auth/me"], data); },
+    onSuccess: (data) => {
+      setSessionToken(data?.sessionToken);
+      queryClient.setQueryData(["/api/auth/me"], data);
+    },
   });
 
   const registerMutation = useMutation({
@@ -69,7 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/register", data);
       return await res.json();
     },
-    onSuccess: (data) => { queryClient.setQueryData(["/api/auth/me"], data); },
+    onSuccess: (data) => {
+      setSessionToken(data?.sessionToken);
+      queryClient.setQueryData(["/api/auth/me"], data);
+    },
   });
 
   const logoutMutation = useMutation({
@@ -77,7 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/logout");
       return await res.json();
     },
-    onSuccess: () => { queryClient.setQueryData(["/api/auth/me"], null); },
+    onSuccess: () => {
+      setSessionToken(null);
+      queryClient.setQueryData(["/api/auth/me"], null);
+    },
   });
 
   return (

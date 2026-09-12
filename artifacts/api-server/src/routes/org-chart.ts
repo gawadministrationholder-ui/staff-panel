@@ -124,7 +124,7 @@ async function buildOrgChart() {
   };
 }
 
-router.get("/org-chart", requireAuth, async (_req: Request, res: Response) => {
+router.get("/org-chart", async (_req: Request, res: Response) => {
   try {
     const chart = await buildOrgChart();
     res.json(chart);

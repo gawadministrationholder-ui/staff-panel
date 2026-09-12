@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AuthModal } from "@/components/AuthModal";
+import StarfieldBackground from "@/components/StarfieldBackground";
 import NotFound from "@/pages/not-found";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
@@ -110,6 +112,13 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "register">("login");
+
+  function openAuthModal(tab: "login" | "register") {
+    setAuthModalTab(tab);
+    setAuthModalOpen(true);
+  }
 
   const handleLogout = async () => {
     await logout();
@@ -222,15 +231,27 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/login">
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-md font-semibold transition-colors">
-                Sign In
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => openAuthModal("login")}
+                className="text-white hover:text-amber-500 px-3 py-2 font-medium transition-colors"
+                data-testid="button-open-login"
+              >
+                Login
               </button>
-            </Link>
+              <button
+                onClick={() => openAuthModal("register")}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-md font-semibold transition-colors"
+                data-testid="button-open-register"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
       </header>
-      <main className="flex-1 overflow-auto bg-background">{children}</main>
+      <main className="flex-1 overflow-auto bg-transparent">{children}</main>
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} defaultTab={authModalTab} />
     </div>
   );
 }
@@ -254,8 +275,8 @@ function AppRouter() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/complete-profile">{() => <CompleteProfile />}</Route>
-      <Route path="/">{() => <Wrap><Dashboard /></Wrap>}</Route>
-      <Route path="/dashboard">{() => <Wrap><Dashboard /></Wrap>}</Route>
+      <Route path="/">{() => <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>}</Route>
+      <Route path="/dashboard">{() => <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>}</Route>
       <Route path="/applications">{() => <Wrap><Applications /></Wrap>}</Route>
       <Route path="/application-manager">{() => <Wrap><ApplicationManager /></Wrap>}</Route>
       <Route path="/directory">{() => <Wrap><Directory /></Wrap>}</Route>
@@ -296,6 +317,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <div className="dark">
+              <StarfieldBackground />
               <Toaster />
               <AppRouter />
             </div>

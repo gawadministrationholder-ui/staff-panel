@@ -175,7 +175,7 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 220 5% 8%;
+  --background: 0 0% 0%;
   --foreground: 220 5% 95%;
   --border: 220 8% 18%;
   --card: 220 6% 10%;
@@ -240,7 +240,8 @@
     @apply border-border;
   }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background-color: transparent;
   }
 }
 

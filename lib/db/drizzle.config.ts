@@ -5,6 +5,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
+  // A relative, forward-slash path (rather than an absolute path.join(...)
+  // result) avoids a drizzle-kit bug on Windows where backslash-separated
+  // absolute paths fail its internal glob matching.
   schema: "./src/schema/index.ts",
   dialect: "postgresql",
   dbCredentials: {

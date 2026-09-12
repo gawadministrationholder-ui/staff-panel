@@ -79,6 +79,35 @@ declare module "express-session" {
   }
 }
 
+// Fallback auth path for when the cross-domain session cookie doesn't
+// survive a full page reload (some browsers restrict third-party/cross-site
+// cookies more aggressively than others). If no cookie-based session was
+// found, but the client sent a bearer token (the session ID we handed back
+// at login), look that session up directly in the session table and use it
+// for this request. Nothing gets written back to the store — it's a
+// read-only fallback, not a replacement for the cookie path.
+app.use(async (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.session.userId) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+    if (token) {
+      try {
+        const result = await pgPool.query<{ sess: { userId?: string } }>(
+          "SELECT sess FROM session WHERE sid = $1 AND expire > now()",
+          [token],
+        );
+        const sessionUserId = result.rows[0]?.sess?.userId;
+        if (sessionUserId) {
+          req.session.userId = sessionUserId;
+        }
+      } catch (error) {
+        logger.error({ error }, "Bearer token session lookup failed");
+      }
+    }
+  }
+  next();
+});
+
 app.use("/api", router);
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

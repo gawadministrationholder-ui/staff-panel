@@ -231,8 +231,15 @@ router.patch("/users/:id", requireAuth, requireRank(7), async (req: Request, res
       // alone is not enough. Administrators who aren't also an Executive
       // have their change queued for a Network Engineer to approve instead
       // of applying it immediately.
+      //
+      // Bootstrap exception: nobody starts with any clearance at all, so
+      // without this, no one could ever grant the very first Network
+      // Engineer. Until literally anyone in the system has any clearance,
+      // this check is open — the moment one person is granted clearance,
+      // it closes for good and normal rules apply to everyone from then on.
+      const bootstrapOpen = !(await storage.hasAnyAssignedClearance());
       const actorClearances = parseClearances(req.user!.clearance);
-      const isEngineer = actorClearances.includes("Network Engineer");
+      const isEngineer = actorClearances.includes("Network Engineer") || bootstrapOpen;
       const isAdmin = actorClearances.includes("Network Administrator");
       const isExecutive = actorClearances.includes("Executive");
 
@@ -314,6 +321,15 @@ router.patch("/users/:id", requireAuth, requireRank(7), async (req: Request, res
 });
 
 // ── Access Change Requests (Network Engineer approval queue) ─────────────────
+
+router.get("/access-bootstrap-status", requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const open = !(await storage.hasAnyAssignedClearance());
+    res.json({ open });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.get("/access-requests", requireAuth, requireClearance("Network Engineer"), async (_req, res: Response) => {
   try {

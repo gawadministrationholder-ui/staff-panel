@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, sql } from "drizzle-orm";
 import * as schema from "@workspace/db";
 import type {
   User,
@@ -293,6 +293,27 @@ export class PostgresStorage {
   }
 
   // ── Org Chart Descriptions ──────────────────────────────────────────────
+
+  /**
+   * True until the very first clearance is ever assigned to anyone in the
+   * whole system. Used purely to bootstrap the clearance system itself —
+   * with nothing to check permissions against yet, nobody could otherwise
+   * ever grant the first Network Engineer. Once one exists, this closes
+   * permanently and normal clearance rules apply to everyone, including
+   * whoever used this to bootstrap themselves in.
+   */
+  async hasAnyAssignedClearance(): Promise<boolean> {
+    const rows = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(and(
+        sql`${schema.users.clearance} IS NOT NULL`,
+        sql`${schema.users.clearance} != ''`,
+        sql`${schema.users.clearance} != 'Member'`,
+      ))
+      .limit(1);
+    return rows.length > 0;
+  }
 
   async getAllOrgChartDescriptions(): Promise<{ key: string; description: string }[]> {
     const rows = await db

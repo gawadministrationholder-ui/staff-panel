@@ -52,7 +52,11 @@ export default function DeveloperPortal() {
   });
 
   const myClearances = (user?.clearance || "").split(",").map((c) => c.trim()).filter(Boolean);
-  const isEngineer = myClearances.includes("Network Engineer");
+  const { data: bootstrapStatus } = useQuery<{ open: boolean }>({
+    queryKey: ["/api/access-bootstrap-status"],
+  });
+  const bootstrapOpen = bootstrapStatus?.open ?? false;
+  const isEngineer = myClearances.includes("Network Engineer") || bootstrapOpen;
   const isAdmin = myClearances.includes("Network Administrator");
   const canManageAccess = isEngineer || isAdmin;
 

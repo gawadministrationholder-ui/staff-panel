@@ -354,6 +354,30 @@ export class PostgresStorage {
         set: { bio, updatedAt: new Date() },
       });
   }
+
+  // ── Custom Pages ─────────────────────────────────────────────────────────
+
+  async getCustomPage(key: string): Promise<{ key: string; title: string; blocks: string } | undefined> {
+    const rows = await db
+      .select({
+        key: schema.customPages.key,
+        title: schema.customPages.title,
+        blocks: schema.customPages.blocks,
+      })
+      .from(schema.customPages)
+      .where(eq(schema.customPages.key, key));
+    return rows[0];
+  }
+
+  async upsertCustomPage(key: string, title: string, blocks: string, updatedBy: string): Promise<void> {
+    await db
+      .insert(schema.customPages)
+      .values({ key, title, blocks, updatedBy, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: schema.customPages.key,
+        set: { title, blocks, updatedBy, updatedAt: new Date() },
+      });
+  }
 }
 
 export const storage = new PostgresStorage();

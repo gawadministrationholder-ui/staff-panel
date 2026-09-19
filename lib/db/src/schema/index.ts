@@ -306,3 +306,15 @@ export const staffBios = pgTable("staff_bios", {
   bio: text("bio").notNull().default(""),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Content for the three editable custom pages (Jedi Order, Sith Order,
+// Community). The whole page is stored as one JSON array of blocks rather
+// than a row per block, so reordering/editing is a single atomic write and
+// there's no ordering bookkeeping to get out of sync.
+export const customPages = pgTable("custom_pages", {
+  key: text("key").primaryKey(),
+  title: text("title").notNull().default(""),
+  blocks: text("blocks").notNull().default("[]"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by").references(() => users.id),
+});

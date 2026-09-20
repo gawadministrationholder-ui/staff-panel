@@ -5,14 +5,15 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
-// Only these three pages exist and they can't be created or deleted from
-// the UI — the set is fixed in code deliberately so the nav never points at
-// a page that doesn't exist.
-const PAGES: Record<string, string> = {
-  "jedi-order": "The Jedi Order",
-  "sith-order": "The Sith Order",
-  community: "Community",
-};
+/** lowercase-hyphen slug from a title, e.g. "The Jedi Order" -> "the-jedi-order". */
+function slugify(title: string): string {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return base || "page";
+}
 
 const BLOCK_TYPES = ["heading", "text", "image", "button", "divider"] as const;
 type BlockType = (typeof BLOCK_TYPES)[number];
@@ -77,21 +78,74 @@ function sanitizeBlocks(raw: unknown): Block[] {
   });
 }
 
+// List every page that currently exists, in the order they were created —
+// this is what drives the Pages dropdown in the top bar.
+router.get("/pages", requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const pages = await storage.listCustomPages();
+    res.json(pages);
+  } catch (error: any) {
+    logger.error({ error }, "Failed to list custom pages");
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/pages", requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (!canEditPages(req)) {
+      return res.status(403).json({ error: "You don't have permission to add pages" });
+    }
+    const { title } = req.body;
+    if (typeof title !== "string" || !title.trim() || title.length > 120) {
+      return res.status(400).json({ error: "Invalid title" });
+    }
+
+    const existing = await storage.listCustomPages();
+    const taken = new Set(existing.map((p) => p.key));
+    let key = slugify(title);
+    let suffix = 2;
+    while (taken.has(key)) {
+      key = `${slugify(title)}-${suffix}`;
+      suffix++;
+    }
+
+    await storage.createCustomPage(key, title.trim(), req.user!.id);
+    logger.info({ page: key, by: req.user!.robloxUsername }, "Custom page created");
+    res.json({ key, title: title.trim() });
+  } catch (error: any) {
+    logger.error({ error }, "Failed to create custom page");
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete("/pages/:key", requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (!canEditPages(req)) {
+      return res.status(403).json({ error: "You don't have permission to delete pages" });
+    }
+    await storage.deleteCustomPage(req.params.key);
+    logger.info({ page: req.params.key, by: req.user!.robloxUsername }, "Custom page deleted");
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error({ error }, "Failed to delete custom page");
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get("/pages/:key", async (req: Request, res: Response) => {
   try {
-    const title = PAGES[req.params.key];
-    if (!title) return res.status(404).json({ error: "Page not found" });
-
     const page = await storage.getCustomPage(req.params.key);
+    if (!page) return res.status(404).json({ error: "Page not found" });
+
     let blocks: Block[] = [];
-    if (page?.blocks) {
+    if (page.blocks) {
       try {
         blocks = JSON.parse(page.blocks);
       } catch {
         blocks = [];
       }
     }
-    res.json({ key: req.params.key, title: page?.title || title, blocks });
+    res.json({ key: req.params.key, title: page.title, blocks });
   } catch (error: any) {
     logger.error({ error }, "Failed to load custom page");
     res.status(500).json({ error: error.message });
@@ -100,12 +154,12 @@ router.get("/pages/:key", async (req: Request, res: Response) => {
 
 router.put("/pages/:key", requireAuth, async (req: Request, res: Response) => {
   try {
-    const defaultTitle = PAGES[req.params.key];
-    if (!defaultTitle) return res.status(404).json({ error: "Page not found" });
-
     if (!canEditPages(req)) {
       return res.status(403).json({ error: "You don't have permission to edit pages" });
     }
+
+    const existingPage = await storage.getCustomPage(req.params.key);
+    if (!existingPage) return res.status(404).json({ error: "Page not found — create it first" });
 
     const { title, blocks } = req.body;
     if (title !== undefined && (typeof title !== "string" || title.length > 120)) {
@@ -115,7 +169,7 @@ router.put("/pages/:key", requireAuth, async (req: Request, res: Response) => {
     const sanitized = sanitizeBlocks(blocks);
     await storage.upsertCustomPage(
       req.params.key,
-      typeof title === "string" && title.trim() ? title : defaultTitle,
+      typeof title === "string" && title.trim() ? title : existingPage.title,
       JSON.stringify(sanitized),
       req.user!.id,
     );

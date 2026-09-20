@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthModal } from "@/components/AuthModal";
 import StarfieldBackground from "@/components/StarfieldBackground";
 import CustomPage from "@/components/CustomPage";
+import { PagesNav } from "@/components/PagesNav";
 import NotFound from "@/pages/not-found";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
@@ -138,31 +139,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
           </h1>
         </div>
         <div className="flex items-center gap-6 text-sm">
-          {user && (
-            <>
-              <button
-                onClick={() => setLocation("/jedi-order")}
-                className="hover:text-primary transition-colors cursor-pointer"
-                data-testid="nav-jedi-order"
-              >
-                The Jedi Order
-              </button>
-              <button
-                onClick={() => setLocation("/sith-order")}
-                className="hover:text-primary transition-colors cursor-pointer"
-                data-testid="nav-sith-order"
-              >
-                The Sith Order
-              </button>
-              <button
-                onClick={() => setLocation("/community")}
-                className="hover:text-primary transition-colors cursor-pointer"
-                data-testid="nav-community"
-              >
-                Community
-              </button>
-            </>
-          )}
+          {user && <PagesNav />}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -281,9 +258,7 @@ function AppRouter() {
       <Route path="/complete-profile">{() => <CompleteProfile />}</Route>
       <Route path="/">{() => <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>}</Route>
       <Route path="/dashboard">{() => <AuthenticatedLayout><Dashboard /></AuthenticatedLayout>}</Route>
-      <Route path="/jedi-order">{() => <AuthenticatedLayout><CustomPage pageKey="jedi-order" /></AuthenticatedLayout>}</Route>
-      <Route path="/sith-order">{() => <AuthenticatedLayout><CustomPage pageKey="sith-order" /></AuthenticatedLayout>}</Route>
-      <Route path="/community">{() => <AuthenticatedLayout><CustomPage pageKey="community" /></AuthenticatedLayout>}</Route>
+      <Route path="/pages/:key">{(params) => <AuthenticatedLayout><CustomPage pageKey={params.key} /></AuthenticatedLayout>}</Route>
       <Route path="/applications">{() => <Wrap><Applications /></Wrap>}</Route>
       <Route path="/application-manager">{() => <Wrap><ApplicationManager /></Wrap>}</Route>
       <Route path="/directory">{() => <Wrap><Directory /></Wrap>}</Route>

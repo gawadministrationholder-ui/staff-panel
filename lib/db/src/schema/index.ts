@@ -315,6 +315,24 @@ export const customPages = pgTable("custom_pages", {
   key: text("key").primaryKey(),
   title: text("title").notNull().default(""),
   blocks: text("blocks").notNull().default("[]"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   updatedBy: varchar("updated_by").references(() => users.id),
+});
+
+// Heartbeat rows written by long-running processes (currently just the
+// Discord bot) so the staff panel can show a live online/offline indicator
+// without the panel needing to reach out to that process directly.
+export const botHeartbeats = pgTable("bot_heartbeats", {
+  key: text("key").primaryKey(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+});
+
+export const announcements = pgTable("announcements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  createdByName: text("created_by_name").notNull(),
+  createdById: varchar("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

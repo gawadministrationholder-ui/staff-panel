@@ -378,6 +378,64 @@ export class PostgresStorage {
         set: { title, blocks, updatedBy, updatedAt: new Date() },
       });
   }
+
+  async listCustomPages(): Promise<{ key: string; title: string }[]> {
+    return db
+      .select({ key: schema.customPages.key, title: schema.customPages.title })
+      .from(schema.customPages)
+      .orderBy(schema.customPages.createdAt);
+  }
+
+  async createCustomPage(key: string, title: string, createdBy: string): Promise<void> {
+    await db.insert(schema.customPages).values({ key, title, blocks: "[]", updatedBy: createdBy });
+  }
+
+  async deleteCustomPage(key: string): Promise<void> {
+    await db.delete(schema.customPages).where(eq(schema.customPages.key, key));
+  }
+
+  // ── Bot heartbeat ────────────────────────────────────────────────────────
+
+  async recordBotHeartbeat(key: string): Promise<void> {
+    await db
+      .insert(schema.botHeartbeats)
+      .values({ key, lastSeenAt: new Date() })
+      .onConflictDoUpdate({ target: schema.botHeartbeats.key, set: { lastSeenAt: new Date() } });
+  }
+
+  async getBotHeartbeat(key: string): Promise<Date | undefined> {
+    const rows = await db
+      .select({ lastSeenAt: schema.botHeartbeats.lastSeenAt })
+      .from(schema.botHeartbeats)
+      .where(eq(schema.botHeartbeats.key, key));
+    return rows[0]?.lastSeenAt;
+  }
+
+  // ── Announcements ────────────────────────────────────────────────────────
+
+  async listAnnouncements(limit = 10): Promise<
+    { id: string; title: string; content: string; createdByName: string; createdAt: Date }[]
+  > {
+    return db
+      .select({
+        id: schema.announcements.id,
+        title: schema.announcements.title,
+        content: schema.announcements.content,
+        createdByName: schema.announcements.createdByName,
+        createdAt: schema.announcements.createdAt,
+      })
+      .from(schema.announcements)
+      .orderBy(desc(schema.announcements.createdAt))
+      .limit(limit);
+  }
+
+  async createAnnouncement(title: string, content: string, createdByName: string, createdById: string): Promise<void> {
+    await db.insert(schema.announcements).values({ title, content, createdByName, createdById });
+  }
+
+  async deleteAnnouncement(id: string): Promise<void> {
+    await db.delete(schema.announcements).where(eq(schema.announcements.id, id));
+  }
 }
 
 export const storage = new PostgresStorage();

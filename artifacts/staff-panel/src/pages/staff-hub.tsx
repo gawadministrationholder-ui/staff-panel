@@ -50,9 +50,13 @@ interface PolicyAcknowledgment {
   viewDuration: number | null;
 }
 
-const STAFF_OATH = `I solemnly pledge my loyalty to Galaxy at War and to its people. I shall uphold the law with fairness, guard the community with vigilance, and carry myself with the honour befitting this galaxy. I will serve without favour, act without malice, and hold the trust placed in me as sacred. By my hand and by my seal, I swear this oath.`;
+const STAFF_OATH = `I solemnly pledge my loyalty to GAW and to its people. I shall uphold the law with fairness, guard the community with vigilance, and carry myself with the honour befitting this office. I will serve without favour, act without malice, and hold the trust placed in me as sacred. By my hand and by my seal, I swear this oath.`;
 
-// Wax seal element — stamped, embossed look
+/**
+ * The wax seal is the one deliberately ornamental element on this page —
+ * everything else stays quiet so this keeps its weight. It appears exactly
+ * twice: once on the letterhead, once on the oath itself.
+ */
 function WaxSeal({ size = 64, label = "SPQR", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
   return (
     <div
@@ -61,17 +65,32 @@ function WaxSeal({ size = 64, label = "SPQR", sworn = true }: { size?: number; l
         width: size,
         height: size,
         background: sworn
-          ? "radial-gradient(circle at 35% 30%, #b91c1c, #7f1d1d 70%, #5c1212)"
+          ? "radial-gradient(circle at 35% 30%, hsl(var(--accent-foreground)), hsl(var(--accent)) 65%, hsl(var(--accent)))"
           : "radial-gradient(circle at 35% 30%, #4b5563, #374151 70%, #1f2937)",
-        boxShadow: "inset 0 2px 4px rgba(255,255,255,.25), inset 0 -3px 6px rgba(0,0,0,.45), 0 3px 8px rgba(0,0,0,.5)",
+        boxShadow: "inset 0 2px 4px rgba(255,255,255,.2), inset 0 -3px 6px rgba(0,0,0,.5), 0 3px 10px rgba(0,0,0,.45)",
       }}
     >
-      <div className="absolute rounded-full border border-amber-200/30" style={{ inset: size * 0.12 }} />
-      <div className="absolute rounded-full border border-amber-200/20" style={{ inset: size * 0.2 }} />
-      <span className="font-display font-bold text-amber-100/90 tracking-widest" style={{ fontSize: size * 0.22 }}>
+      <div className="absolute rounded-full border border-primary-foreground/25" style={{ inset: size * 0.12 }} />
+      <div className="absolute rounded-full border border-primary-foreground/15" style={{ inset: size * 0.2 }} />
+      <span className="font-display font-bold text-primary-foreground/90 tracking-widest" style={{ fontSize: size * 0.2 }}>
         {label}
       </span>
     </div>
+  );
+}
+
+/** A single row in the Directory list. Not a button grid — a plain, scannable index. */
+function DirectoryRow({ link }: { link: StaffLink }) {
+  return (
+    <button
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-left hover-elevate active-elevate-2 border border-transparent"
+      onClick={() => window.open(link.url, "_blank")}
+      data-testid={`button-quick-link-${link.id}`}
+    >
+      <LinkIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+      <span className="flex-1 min-w-0 truncate text-sm">{link.title}</span>
+      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+    </button>
   );
 }
 
@@ -120,7 +139,7 @@ export default function StaffHub() {
   const swearOathMutation = useMutation({
     mutationFn: async () => apiRequest("POST", "/api/swear-oath", {}),
     onSuccess: () => {
-      toast({ title: "Oath Sworn", description: "Your oath has been sealed into the record." });
+      toast({ title: "Oath sworn", description: "Your oath has been sealed into the record." });
       setShowOath(false);
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     },
@@ -136,14 +155,11 @@ export default function StaffHub() {
   if (user && user.rank < 97) {
     return (
       <div className="container mx-auto max-w-md p-6">
-        <Card className="border-red-500/30">
-          <CardHeader className="bg-red-900 text-white py-3">
-            <CardTitle className="font-display text-sm tracking-wide flex items-center gap-2">
-              <Shield className="w-4 h-4" /> RESTRICTED
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-5 text-center space-y-3">
-            <WaxSeal size={56} sworn={false} label="✕" />
+        <Card className="overflow-hidden">
+          <div className="h-1 bg-accent" />
+          <CardContent className="pt-6 pb-6 text-center space-y-3">
+            <Shield className="w-8 h-8 mx-auto text-muted-foreground" />
+            <p className="font-display text-sm tracking-wide">Restricted</p>
             <p className="text-sm text-muted-foreground">
               The Staff Hub is reserved for Trial Moderators and above.
             </p>
@@ -154,27 +170,31 @@ export default function StaffHub() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl p-4 md:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-gradient-to-r from-red-950/40 via-background to-background px-5 py-4">
-        <div className="flex items-center gap-3">
-          <WaxSeal size={48} />
-          <div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-wide">Staff Hub</h1>
-            <p className="text-muted-foreground text-sm">Galaxy at War · Central Command</p>
+    <div className="container mx-auto max-w-6xl p-4 md:p-6 space-y-6">
+      {/* Letterhead */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="flex items-center gap-4 px-5 py-5 md:px-6">
+          <WaxSeal size={52} />
+          <div className="flex-1 min-w-0">
+            <p className="font-display text-xs tracking-[0.2em] text-muted-foreground">GAW</p>
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Staff Hub</h1>
           </div>
+          <img src={brandLogo} alt="GAW Administration" className="h-12 w-12 md:h-14 md:w-14 object-contain shrink-0" />
         </div>
-        <img src={brandLogo} alt="Galaxy at War Administration" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
+        <div className="h-px bg-border" />
+        <div className="h-px bg-accent/60" />
+        <p className="px-5 py-2.5 md:px-6 text-xs text-muted-foreground font-serif italic">
+          Where GAW's staff take their oath, keep the decrees, and answer the call.
+        </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-5">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* Left rail */}
-        <div className="lg:col-span-1 space-y-5">
-          {/* Profile */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Personal record */}
           <Card className="overflow-hidden">
-            <div className="h-2 bg-gradient-to-r from-red-700 via-amber-500 to-red-700" />
-            <CardContent className="pt-5 flex flex-col items-center text-center space-y-3">
-              <Avatar className="w-20 h-20 border-4 border-amber-500/30">
+            <CardContent className="pt-6 flex flex-col items-center text-center space-y-3">
+              <Avatar className="w-20 h-20 border-2 border-border">
                 <AvatarImage src={user?.robloxAvatar} alt={user?.robloxUsername} />
                 <AvatarFallback>{user?.robloxUsername.charAt(0)}</AvatarFallback>
               </Avatar>
@@ -186,27 +206,27 @@ export default function StaffHub() {
                   </Badge>
                 )}
                 <p className="text-xs text-muted-foreground mt-2">
-                  Staff Member Since{(user as any)?.createdAt ? `: ${new Date((user as any).createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}
+                  Staff member since{(user as any)?.createdAt ? ` ${new Date((user as any).createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Oath of Service */}
-          <Card className={`overflow-hidden border ${hasSworn ? "border-amber-500/30 bg-amber-500/5" : "border-red-500/30"}`}>
-            <CardHeader className="bg-gradient-to-r from-red-900 to-red-800 text-white py-2.5">
-              <div className="flex items-center gap-2">
+          {/* Oath of service */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <ScrollText className="w-4 h-4" />
-                <CardTitle className="font-display text-sm tracking-wide">OATH OF SERVICE</CardTitle>
+                <CardTitle className="font-display text-sm">Oath of service</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="pt-4 flex flex-col items-center text-center space-y-3">
+            <CardContent className="flex flex-col items-center text-center space-y-3">
               {hasSworn ? (
                 <>
-                  <WaxSeal size={72} sworn />
+                  <WaxSeal size={68} sworn />
                   <div>
                     <p className="font-semibold text-sm flex items-center justify-center gap-1.5">
-                      <Check className="w-4 h-4 text-green-500" /> Oath Sworn
+                      <Check className="w-4 h-4 text-primary" /> Oath sworn
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Sealed on {new Date(user!.oathSwornAt as string).toLocaleDateString()}
@@ -218,34 +238,34 @@ export default function StaffHub() {
                 </>
               ) : (
                 <>
-                  <WaxSeal size={72} sworn={false} label="?" />
+                  <WaxSeal size={68} sworn={false} label="?" />
                   <p className="text-xs text-muted-foreground">
                     You have not yet sworn the staff oath. All staff are expected to take the oath upon joining.
                   </p>
                   <Button
-                    className="w-full bg-red-800 hover:bg-red-700 text-white font-display tracking-wide"
+                    className="w-full font-display tracking-wide"
                     onClick={() => setShowOath(true)}
                     data-testid="button-open-oath"
                   >
-                    Swear the Oath
+                    Swear the oath
                   </Button>
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* Staff of the Month */}
+          {/* Staff of the month */}
           {staffOfTheMonth && (
-            <Card className="bg-amber-500/10 border-amber-500/20 overflow-hidden">
-              <CardHeader className="bg-red-800 text-white py-2.5">
-                <div className="flex items-center gap-2">
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="w-4 h-4" />
-                  <CardTitle className="font-display text-sm tracking-wide">STAFF MEMBER OF THE MONTH</CardTitle>
+                  <CardTitle className="font-display text-sm">Staff member of the month</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="pt-4">
+              <CardContent>
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <Avatar className="w-14 h-14 border-2 border-amber-500/40">
+                  <Avatar className="w-14 h-14 border-2 border-border">
                     <AvatarImage src={staffOfTheMonth.staffAvatar} alt={staffOfTheMonth.staffName} />
                     <AvatarFallback>{staffOfTheMonth.staffName.charAt(0)}</AvatarFallback>
                   </Avatar>
@@ -260,76 +280,65 @@ export default function StaffHub() {
         </div>
 
         {/* Right column */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Quick Links */}
-          <Card className="bg-amber-500/5 border-amber-500/20 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-red-900 to-red-800 text-white py-2.5">
-              <div className="flex items-center gap-2">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Directory */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <LinkIcon className="w-4 h-4" />
-                <CardTitle className="font-display text-sm tracking-wide">QUICK LINKS</CardTitle>
+                <CardTitle className="font-display text-sm">Directory</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-0">
               {links.length > 0 ? (
-                <div className="grid sm:grid-cols-2 gap-2.5">
+                <div className="grid sm:grid-cols-2 gap-1">
                   {links.map((link) => (
-                    <Button
-                      key={link.id}
-                      variant="outline"
-                      className="w-full justify-start border-amber-500/20 hover:bg-amber-500/10 hover:border-amber-500/40"
-                      data-testid={`button-quick-link-${link.id}`}
-                      onClick={() => window.open(link.url, "_blank")}
-                    >
-                      <LinkIcon className="w-4 h-4 mr-2 text-amber-500" />
-                      <span className="truncate">{link.title}</span>
-                      <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
-                    </Button>
+                    <DirectoryRow key={link.id} link={link} />
                   ))}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No quick links yet.{canManage ? " Add them from Staff Management." : ""}
+                  No links yet.{canManage ? " Add them from Staff Management." : ""}
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Staff Policies */}
-          <Card className="bg-amber-500/5 border-amber-500/20 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-red-900 to-red-800 text-white py-2.5 flex flex-row items-center justify-between">
-              <div className="flex items-center gap-2">
+          {/* Decrees (staff policies) */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <FileText className="w-4 h-4" />
-                <CardTitle className="font-display text-sm tracking-wide">STAFF POLICIES</CardTitle>
+                <CardTitle className="font-display text-sm">Decrees</CardTitle>
               </div>
               {unreadPolicies.length > 0 && (
-                <Badge className="bg-amber-500 text-black hover:bg-amber-500">{unreadPolicies.length} to seal</Badge>
+                <Badge className="bg-accent text-accent-foreground border-accent-border">{unreadPolicies.length} to seal</Badge>
               )}
             </CardHeader>
 
-            <CardContent className="pt-4 space-y-4">
+            <CardContent className="space-y-5">
               {/* Pending */}
               {unreadPolicies.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-xs uppercase tracking-wider mb-2 text-red-400">Awaiting Your Seal</h3>
+                  <h3 className="text-xs text-muted-foreground mb-2">Awaiting your seal</h3>
                   <div className="space-y-2">
                     {unreadPolicies.map((policy) => (
                       <div
                         key={policy.id}
-                        className="p-3 rounded-md border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 cursor-pointer transition-colors flex items-center gap-3"
+                        className="p-3 rounded-md border-l-2 border-accent bg-accent/10 hover-elevate active-elevate-2 cursor-pointer flex items-center gap-3"
                         onClick={() => setShowPolicyContent(policy.id)}
                       >
-                        <WaxSeal size={36} sworn={false} label="!" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{policy.title}</p>
                           <p className="text-xs text-muted-foreground line-clamp-1">{policy.content}</p>
                         </div>
                         <Button
                           size="sm"
-                          className="bg-red-800 hover:bg-red-700 text-white whitespace-nowrap"
+                          className="whitespace-nowrap"
                           onClick={(e) => { e.stopPropagation(); setShowPolicyContent(policy.id); }}
                           data-testid={`button-read-policy-${policy.id}`}
                         >
-                          Read & Seal
+                          Read &amp; seal
                         </Button>
                       </div>
                     ))}
@@ -340,15 +349,15 @@ export default function StaffHub() {
               {/* Sealed */}
               {readPolicies.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-xs uppercase tracking-wider mb-2 text-amber-500/80">Sealed Policies</h3>
+                  <h3 className="text-xs text-muted-foreground mb-2">Sealed</h3>
                   <div className="space-y-2">
                     {readPolicies.map((policy) => (
                       <div
                         key={policy.id}
-                        className="p-3 rounded-md border border-amber-500/20 bg-background hover:bg-amber-500/5 cursor-pointer transition-colors flex items-center gap-3"
+                        className="p-3 rounded-md border-l-2 border-border hover-elevate active-elevate-2 cursor-pointer flex items-center gap-3"
                         onClick={() => setShowPolicyContent(policy.id)}
                       >
-                        <WaxSeal size={36} sworn label="✓" />
+                        <Check className="w-4 h-4 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{policy.title}</p>
                           <p className="text-xs text-muted-foreground">By {policy.createdByName}</p>
@@ -377,17 +386,17 @@ export default function StaffHub() {
         </div>
       </div>
 
-      {/* Oath Dialog */}
+      {/* Oath dialog */}
       <Dialog open={showOath} onOpenChange={setShowOath}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-display tracking-wide flex items-center gap-2">
-              <Shield className="w-5 h-5 text-red-600" /> The Staff Oath
+            <DialogTitle className="font-display flex items-center gap-2">
+              <Shield className="w-5 h-5 text-accent-foreground" /> The staff oath
             </DialogTitle>
             <DialogDescription>Read carefully before you swear.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-2">
-            <div className="relative w-full rounded-md border border-amber-500/30 bg-gradient-to-b from-amber-500/5 to-transparent p-5 text-center">
+            <div className="w-full rounded-md border border-border bg-accent/5 p-5 text-center">
               <p className="font-display text-sm leading-relaxed italic">&ldquo;{STAFF_OATH}&rdquo;</p>
             </div>
             {hasSworn ? (
@@ -400,12 +409,12 @@ export default function StaffHub() {
               </div>
             ) : (
               <Button
-                className="w-full bg-red-800 hover:bg-red-700 text-white font-display tracking-wide"
+                className="w-full font-display tracking-wide"
                 onClick={() => swearOathMutation.mutate()}
                 disabled={swearOathMutation.isPending}
                 data-testid="button-swear-oath"
               >
-                {swearOathMutation.isPending ? "Sealing..." : "I Swear This Oath"}
+                {swearOathMutation.isPending ? "Sealing..." : "I swear this oath"}
               </Button>
             )}
           </div>
@@ -417,23 +426,22 @@ export default function StaffHub() {
         <Dialog open={!!showPolicyContent} onOpenChange={() => setShowPolicyContent(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="font-display tracking-wide">{viewingPolicy.title}</DialogTitle>
+              <DialogTitle className="font-display">{viewingPolicy.title}</DialogTitle>
               <DialogDescription>By {viewingPolicy.createdByName}</DialogDescription>
             </DialogHeader>
-            <div className="bg-background p-4 rounded border max-h-64 overflow-y-auto whitespace-pre-wrap text-sm">
+            <div className="bg-background p-4 rounded border border-border max-h-64 overflow-y-auto whitespace-pre-wrap text-sm">
               {viewingPolicy.content}
             </div>
-            <div className="flex gap-2 justify-end pt-4 border-t">
+            <div className="flex gap-2 justify-end pt-4 border-t border-border">
               {!viewingPolicy.acknowledged ? (
                 <>
                   <Button onClick={() => setShowPolicyContent(null)} variant="outline" data-testid="button-cancel-policy">Cancel</Button>
                   <Button
                     onClick={() => { acknowledgePolicyMutation.mutate(viewingPolicy.id); setShowPolicyContent(null); }}
                     disabled={acknowledgePolicyMutation.isPending}
-                    className="bg-red-800 hover:bg-red-700 text-white"
                     data-testid="button-accept-policy-modal"
                   >
-                    {acknowledgePolicyMutation.isPending ? "Sealing..." : "Seal & Accept"}
+                    {acknowledgePolicyMutation.isPending ? "Sealing..." : "Seal & accept"}
                   </Button>
                 </>
               ) : (
@@ -448,12 +456,12 @@ export default function StaffHub() {
       <Dialog open={!!showViewers} onOpenChange={() => setShowViewers(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display tracking-wide">Who Sealed This Policy</DialogTitle>
+            <DialogTitle className="font-display">Who sealed this policy</DialogTitle>
             <DialogDescription>Live tracking of policy acknowledgments</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {viewers.map((viewer) => (
-              <div key={viewer.userId} className="flex items-center justify-between p-3 bg-background rounded border">
+              <div key={viewer.userId} className="flex items-center justify-between p-3 bg-background rounded border border-border">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={viewer.robloxAvatar} alt={viewer.robloxUsername} />
@@ -467,7 +475,7 @@ export default function StaffHub() {
                     </p>
                   </div>
                 </div>
-                <WaxSeal size={28} sworn label="✓" />
+                <Check className="w-4 h-4 text-primary" />
               </div>
             ))}
             {viewers.length === 0 && <p className="text-muted-foreground text-sm">No one has sealed this yet.</p>}

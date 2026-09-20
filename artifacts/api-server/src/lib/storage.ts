@@ -379,15 +379,15 @@ export class PostgresStorage {
       });
   }
 
-  async listCustomPages(): Promise<{ key: string; title: string }[]> {
+  async listCustomPages(): Promise<{ key: string; title: string; category: string }[]> {
     return db
-      .select({ key: schema.customPages.key, title: schema.customPages.title })
+      .select({ key: schema.customPages.key, title: schema.customPages.title, category: schema.customPages.category })
       .from(schema.customPages)
-      .orderBy(schema.customPages.createdAt);
+      .orderBy(schema.customPages.category, schema.customPages.createdAt);
   }
 
-  async createCustomPage(key: string, title: string, createdBy: string): Promise<void> {
-    await db.insert(schema.customPages).values({ key, title, blocks: "[]", updatedBy: createdBy });
+  async createCustomPage(key: string, title: string, category: string, createdBy: string): Promise<void> {
+    await db.insert(schema.customPages).values({ key, title, category, blocks: "[]", updatedBy: createdBy });
   }
 
   async deleteCustomPage(key: string): Promise<void> {

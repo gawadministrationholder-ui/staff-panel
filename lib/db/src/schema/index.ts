@@ -314,6 +314,7 @@ export const staffBios = pgTable("staff_bios", {
 export const customPages = pgTable("custom_pages", {
   key: text("key").primaryKey(),
   title: text("title").notNull().default(""),
+  category: text("category").notNull().default("General"),
   blocks: text("blocks").notNull().default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

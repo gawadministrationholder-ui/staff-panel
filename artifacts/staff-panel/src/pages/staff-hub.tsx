@@ -57,7 +57,7 @@ const STAFF_OATH = `I solemnly pledge my loyalty to GAW and to its people. I sha
  * everything else stays quiet so this keeps its weight. It appears exactly
  * twice: once on the letterhead, once on the oath itself.
  */
-function WaxSeal({ size = 64, label = "SPQR", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
+function WaxSeal({ size = 64, label = "GAW", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
   return (
     <div
       className="relative flex items-center justify-center rounded-full shrink-0"

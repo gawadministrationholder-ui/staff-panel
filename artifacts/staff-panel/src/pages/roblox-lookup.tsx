@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Users, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { hasStaffAccess } from "@/lib/clearance";
 import type { RobloxModerationLog } from "@shared/schema";
 
 export default function RobloxLookup() {
@@ -35,14 +36,14 @@ export default function RobloxLookup() {
     }
   };
 
-  if (!user || user.rank < 3) {
+  if (!user || !hasStaffAccess(user.clearance)) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
         <Card className="max-w-md">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-foreground mb-2">Access Denied</h2>
             <p className="text-muted-foreground">
-              You need rank 3 or higher to access the Moderation Network.
+              You need Staff clearance to access the Moderation Network.
             </p>
           </CardContent>
         </Card>

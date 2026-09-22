@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { canAccessStaffManagement, canManagePolicies, canManageStaff, canModifyClearances, parseClearances } from "@/lib/clearance";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,9 +91,7 @@ export default function StaffManagement() {
   const [showSuspend, setShowSuspend] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
 
-  const myClearances = (user?.clearance || "").split(",").map((c) => c.trim()).filter(Boolean);
-  const hasStaffManagerAccess = myClearances.includes("Staff Manager");
-  const canManageHub = !!user && (user.rank >= 150 || hasStaffManagerAccess);
+  const canManageHub = !!user && canManagePolicies(user.clearance);
 
   const { data: hubLinks = [] } = useQuery<{ id: string; title: string; url: string }[]>({
     queryKey: ["/api/staff-links"],
@@ -144,12 +143,12 @@ export default function StaffManagement() {
 
   const { data: allStaff = [] } = useQuery<StaffMember[]>({
     queryKey: ["/api/all-staff"],
-    enabled: !!user && user.rank >= 7,
+    enabled: !!user && canAccessStaffManagement(user.clearance),
   });
 
   const { data: punishments = [] } = useQuery<Punishment[]>({
     queryKey: ["/api/punishments"],
-    enabled: !!user && user.rank >= 7,
+    enabled: !!user && canAccessStaffManagement(user.clearance),
   });
 
   const { data: staffOfTheMonth = null } = useQuery<StaffOfTheMonth | null>({
@@ -247,7 +246,7 @@ export default function StaffManagement() {
     },
   });
 
-  if (user && user.rank < 7 && !hasStaffManagerAccess) {
+  if (user && !canAccessStaffManagement(user.clearance)) {
     return (
       <div className="container mx-auto max-w-6xl p-6">
         <Card>
@@ -257,7 +256,7 @@ export default function StaffManagement() {
               Access Denied
             </CardTitle>
             <CardDescription>
-              Staff Management requires rank 7 or higher. Your current rank: {user.rank}
+              Staff Management requires Staff clearance or higher.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -266,8 +265,8 @@ export default function StaffManagement() {
   }
 
   const handleIssueStrike = (staff: StaffMember) => {
-    if (staff.rank > (user?.rank || 0)) {
-      toast({ title: "Error", description: "You cannot issue strikes to users with higher rank than you", variant: "destructive" });
+    if (staff.rank >= (user?.rank || 0)) {
+      toast({ title: "Error", description: "You can only issue strikes to staff members with lower rank than you", variant: "destructive" });
       return;
     }
     if (selectedViolations.length === 0 && !strikeDescription.trim()) {
@@ -360,7 +359,7 @@ export default function StaffManagement() {
         )}
 
         {/* Control panel */}
-        {user && user.rank >= 150 && (
+        {user && canManagePolicies(user.clearance) && (
           <Card className="border-amber-500/20">
             <CardHeader className="bg-gradient-to-r from-red-900 to-red-800 text-white py-3">
               <div className="flex items-center gap-2">
@@ -401,10 +400,10 @@ export default function StaffManagement() {
                   <Award className="w-4 h-4 mr-2" /> Set Staff of Month
                 </Button>
 
-                {user.rank >= 8 && (
+                {canManagePolicies(user.clearance) && (
                   <Button
                     onClick={() => { if (window.confirm("Reset this member's password? They'll need to set a new one.")) resetPasswordMutation.mutate(); }}
-                    disabled={resetPasswordMutation.isPending}
+                    disabled={resetPasswordMutation.isPending || selectedStaff.rank >= user.rank}
                     variant="outline"
                     data-testid="button-reset-password"
                   >
@@ -736,7 +735,7 @@ export default function StaffManagement() {
         </div>
       )}
 
-      {user && user.rank >= 8 && (
+      {user && canManagePolicies(user.clearance) && (
         <Card className="bg-amber-500/10 border-amber-500/20 overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-red-900 to-red-800 text-white py-3">
             <div className="flex items-center gap-2">

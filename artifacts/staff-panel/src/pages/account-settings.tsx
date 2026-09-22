@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { isNetworkEngineer } from "@/lib/clearance";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -220,7 +221,7 @@ export default function AccountSettings() {
                 </Badge>
               ))}
             </div>
-            {user.rank >= 200 && (
+            {isNetworkEngineer(user.clearance) && (
               <p className="text-xs text-muted-foreground mt-2">
                 Report bugs to system administrator.
               </p>

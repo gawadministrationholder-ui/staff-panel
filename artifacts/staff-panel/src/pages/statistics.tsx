@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { BarChart3 } from "lucide-react";
+import { canAccessStaffManagement } from "@/lib/clearance";
 
 interface ModerationStats {
   totalRobloxMods: number;
@@ -24,8 +25,8 @@ export default function Statistics() {
     refetchInterval: 5000,
   });
 
-  // Access control: rank 7+
-  if (user && user.rank < 7) {
+  // Access control: Staff clearance or higher
+  if (user && !canAccessStaffManagement(user.clearance)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-8">
         <Card className="max-w-md">
@@ -34,7 +35,7 @@ export default function Statistics() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              You need to be rank 7 or higher to access the Statistics dashboard.
+              You need Staff clearance or higher to access the Statistics dashboard.
             </p>
           </CardContent>
         </Card>

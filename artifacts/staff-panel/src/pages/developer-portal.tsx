@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { canAccessStaffManagement, canAdminister } from "@/lib/clearance";
 import { User } from "@shared/schema";
 import { X } from "lucide-react";
 
@@ -62,12 +63,12 @@ export default function DeveloperPortal() {
 
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
     queryKey: ["/api/stats"],
-    enabled: !!user && user.rank >= 7,
+    enabled: !!user && canAccessStaffManagement(user.clearance),
   });
 
   const { data: allUsers, isLoading: usersLoading } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/staff"],
-    enabled: !!user && user.rank >= 8,
+    enabled: !!user && canAdminister(user.clearance),
   });
 
   const { data: pendingRequests } = useQuery<PendingAccessRequest[]>({
@@ -161,14 +162,14 @@ export default function DeveloperPortal() {
     { label: "AVG RESPONSE TIME", value: "125ms", isText: true },
   ];
 
-  if (user && user.rank < 7) {
+  if (user && !canAccessStaffManagement(user.clearance)) {
     return (
       <div className="container mx-auto max-w-6xl p-6">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              Developer Portal requires rank 7 or higher. Your current rank: {user.rank}
+              Developer Portal requires Staff clearance or higher.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -373,7 +374,7 @@ export default function DeveloperPortal() {
             </div>
           )}
 
-          {user && user.rank >= 8 && (
+          {user && canAdminister(user.clearance) && (
         <div>
           <h2 className="text-xl font-bold mb-4">ALL USERS</h2>
           <div className="space-y-2">

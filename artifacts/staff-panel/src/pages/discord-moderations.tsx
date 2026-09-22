@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { hasStaffAccess, canAccessStaffManagement } from "@/lib/clearance";
 import { ModerationTable } from "@/components/moderation-table";
 import { ModerationDetailSheet } from "@/components/moderation-detail-sheet";
 import { ModerationFormDialog, type ModerationFormData } from "@/components/moderation-form-dialog";
@@ -147,12 +148,12 @@ export default function DiscordModerations() {
     }
   };
 
-  if (!user || user.rank < 3) {
+  if (!user || !hasStaffAccess(user.clearance)) {
     return (
       <div className="flex items-center justify-center h-full bg-background">
         <div className="text-center p-6">
           <h2 className="text-xl font-bold text-foreground mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You need rank 3 or higher to access the Moderation Network.</p>
+          <p className="text-muted-foreground">You need Staff clearance to access the Moderation Network.</p>
         </div>
       </div>
     );
@@ -167,8 +168,8 @@ export default function DiscordModerations() {
         </h1>
       </div>
 
-      {/* Create Button - Only for rank 7+ */}
-      {user && user.rank >= 7 && (
+      {/* Create Button - Only for Staff Manager+ */}
+      {user && canAccessStaffManagement(user.clearance) && (
         <div className="flex justify-center">
           <Button
             className="bg-green-600 hover:bg-green-700 text-white px-8"

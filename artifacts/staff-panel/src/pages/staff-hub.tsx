@@ -57,7 +57,7 @@ const STAFF_OATH = `I solemnly pledge my loyalty to GAW and to its people. I sha
  * everything else stays quiet so this keeps its weight. It appears exactly
  * twice: once on the letterhead, once on the oath itself.
  */
-function WaxSeal({ size = 64, label = "GAW", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
+function WaxSeal({ size = 64, label = "SPQR", sworn = true }: { size?: number; label?: string; sworn?: boolean }) {
   return (
     <div
       className="relative flex items-center justify-center rounded-full shrink-0"
@@ -101,7 +101,9 @@ export default function StaffHub() {
   const [showPolicyContent, setShowPolicyContent] = useState<string | null>(null);
   const [showOath, setShowOath] = useState(false);
 
-  const canManage = !!user && user.rank >= 150;
+  // Staff clearance levels that can manage policies
+  const managerClearances = ["Staff Manager", "Executive", "Network Administrator", "Network Engineer"];
+  const canManage = !!user && managerClearances.includes(user.clearance);
   const hasSworn = !!user?.oathSwornAt;
 
   const { data: staffOfTheMonth = null } = useQuery<StaffOfTheMonth | null>({
@@ -152,7 +154,10 @@ export default function StaffHub() {
   const readPolicies = policies.filter((p) => p.acknowledged);
   const viewingPolicy = policies.find((p) => p.id === showPolicyContent);
 
-  if (user && user.rank < 97) {
+  // Staff clearance levels that can access the Staff Hub
+  const staffClearances = ["Staff", "Application Reviewer", "Staff Manager", "Executive", "Network Administrator", "Network Engineer"];
+  
+  if (user && !staffClearances.includes(user.clearance)) {
     return (
       <div className="container mx-auto max-w-md p-6">
         <Card className="overflow-hidden">
@@ -161,7 +166,7 @@ export default function StaffHub() {
             <Shield className="w-8 h-8 mx-auto text-muted-foreground" />
             <p className="font-display text-sm tracking-wide">Restricted</p>
             <p className="text-sm text-muted-foreground">
-              The Staff Hub is reserved for Trial Moderators and above.
+              The Staff Hub requires Staff clearance or above.
             </p>
           </CardContent>
         </Card>

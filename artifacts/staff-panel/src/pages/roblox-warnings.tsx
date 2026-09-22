@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { AlertCircle, Home, LogOut, Settings, BarChart3, FileText, AlertTriangle, MessageSquare, Users, Shield, TrendingUp, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { canAccessStaffManagement } from "@/lib/clearance";
 import type { RobloxModerationLog } from "@shared/schema";
 
 export default function RobloxWarnings() {
@@ -53,13 +54,13 @@ export default function RobloxWarnings() {
     return "Staff";
   };
 
-  if (user && user.rank < 7) {
+  if (user && !canAccessStaffManagement(user.clearance)) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Card className="max-w-md">
           <CardContent className="p-6">
             <p className="text-muted-foreground">
-              You need to be rank 7 or higher to access this page.
+              You need Staff clearance or higher to access this page.
             </p>
           </CardContent>
         </Card>

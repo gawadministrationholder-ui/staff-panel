@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { canViewLogs } from "@/lib/clearance";
 import { format } from "date-fns";
 
 interface ModerationLog {
@@ -23,7 +24,7 @@ export default function Logs() {
 
   const { data: logs = [], isLoading } = useQuery<ModerationLog[]>({
     queryKey: ["/api/logs"],
-    enabled: !!user && user.rank >= 140,
+    enabled: !!user && canViewLogs(user.clearance),
   });
 
   const getActionColor = (action: string) => {
@@ -50,10 +51,10 @@ export default function Logs() {
     );
   }
 
-  if (user.rank < 140) {
+  if (!canViewLogs(user.clearance)) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">You need to be at least rank 140 to view moderation logs</p>
+        <p className="text-muted-foreground">You need Network Administrator or Network Engineer clearance to view moderation logs</p>
       </div>
     );
   }

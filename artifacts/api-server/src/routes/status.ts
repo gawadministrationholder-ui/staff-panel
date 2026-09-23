@@ -21,6 +21,26 @@ router.get("/status", requireAuth, async (_req: Request, res: Response) => {
   });
 });
 
+// Called by the Discord bot itself (a separate project/process) every
+// minute or so, just to say "I'm still alive". Protected by a shared
+// secret instead of a staff login, since the bot has no user session.
+router.post("/bot-heartbeat", async (req: Request, res: Response) => {
+  const expected = process.env.BOT_HEARTBEAT_SECRET;
+  if (!expected) {
+    return res.status(500).json({ error: "BOT_HEARTBEAT_SECRET is not configured on the server" });
+  }
+  if (req.get("X-Bot-Secret") !== expected) {
+    return res.status(401).json({ error: "Invalid or missing secret" });
+  }
+  try {
+    await storage.recordBotHeartbeat("discord-bot");
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error({ error }, "Failed to record bot heartbeat");
+    res.status(500).json({ error: error.message });
+  }
+});
+
 async function checkRoblox(): Promise<boolean> {
   try {
     const controller = new AbortController();

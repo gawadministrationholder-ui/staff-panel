@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Plus, FileText, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronDown, Plus, FileText } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -34,13 +34,11 @@ function CategoryMenu({
   pages,
   canEdit,
   onAddPage,
-  onDeleteCategory,
 }: {
   category: string;
   pages: PageSummary[];
   canEdit: boolean;
   onAddPage: (category: string) => void;
-  onDeleteCategory: (category: string) => void;
 }) {
   const [, setLocation] = useLocation();
   return (
@@ -73,15 +71,6 @@ function CategoryMenu({
               <Plus className="w-4 h-4 mr-2" />
               Add page
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => onDeleteCategory(category)}
-              className="cursor-pointer text-destructive focus:text-destructive"
-              data-testid={`nav-delete-category-${category}`}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete category
-            </DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
@@ -95,8 +84,6 @@ export function PagesNav() {
   const [, setLocation] = useLocation();
   const [addOpen, setAddOpen] = useState(false);
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [targetCategory, setTargetCategory] = useState<string | null>(null);
@@ -136,19 +123,6 @@ export function PagesNav() {
     },
   });
 
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (category: string) => apiRequest("DELETE", `/api/pages/category/${encodeURIComponent(category)}`),
-    onSuccess: (_, category) => {
-      toast({ title: "Category deleted", description: `"${category}" and all its pages have been deleted.` });
-      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
-      setDeleteConfirmOpen(false);
-      setCategoryToDelete(null);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
-
   function openAddPage(category: string) {
     setTargetCategory(category);
     setNewCategory(category);
@@ -162,11 +136,6 @@ export function PagesNav() {
     setAddCategoryOpen(true);
   }
 
-  function openDeleteCategory(category: string) {
-    setCategoryToDelete(category);
-    setDeleteConfirmOpen(true);
-  }
-
   if (!user) return null;
 
   return (
@@ -178,7 +147,6 @@ export function PagesNav() {
           pages={categoryPages}
           canEdit={canEdit}
           onAddPage={openAddPage}
-          onDeleteCategory={openDeleteCategory}
         />
       ))}
 
@@ -193,7 +161,7 @@ export function PagesNav() {
         </button>
       )}
 
-      {/* Add a page into an existing category */}
+      {/* Add a page into an existing category (title comes from the category's own "Add page" item) */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
@@ -219,7 +187,7 @@ export function PagesNav() {
         </DialogContent>
       </Dialog>
 
-      {/* Add a whole new category */}
+      {/* Add a whole new category, which needs at least one page to exist */}
       <Dialog open={addCategoryOpen} onOpenChange={setAddCategoryOpen}>
         <DialogContent>
           <DialogHeader>
@@ -250,33 +218,6 @@ export function PagesNav() {
               data-testid="button-create-category"
             >
               {createMutation.isPending ? "Creating..." : "Create"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete category confirmation */}
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              <DialogTitle>Delete category?</DialogTitle>
-            </div>
-            <DialogDescription>
-              This will permanently delete the "{categoryToDelete}" category and all {categories.find(([c]) => c === categoryToDelete)?.[1].length || 0} pages in it.
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-            <Button
-              variant="destructive"
-              onClick={() => categoryToDelete && deleteCategoryMutation.mutate(categoryToDelete)}
-              disabled={deleteCategoryMutation.isPending}
-              data-testid="button-confirm-delete-category"
-            >
-              {deleteCategoryMutation.isPending ? "Deleting..." : "Delete"}
             </Button>
           </div>
         </DialogContent>

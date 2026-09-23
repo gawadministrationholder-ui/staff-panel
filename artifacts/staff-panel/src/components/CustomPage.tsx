@@ -134,8 +134,9 @@ export default function CustomPage({ pageKey }: { pageKey: string }) {
   const clearances = (user?.clearance || "").split(",").map((c) => c.trim()).filter(Boolean);
   const canEdit = clearances.includes("Network Engineer") || clearances.includes("Network Administrator");
 
-  const { data: page, isLoading } = useQuery<PageData>({
+  const { data: page, isLoading, error } = useQuery<PageData>({
     queryKey: [`/api/pages/${pageKey}`],
+    retry: false,
   });
 
   // Reset the draft whenever the saved page changes or the key changes, so
@@ -195,6 +196,26 @@ export default function CustomPage({ pageKey }: { pageKey: string }) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-16 text-center">
         <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    let requiredClearance: string | null = null;
+    try {
+      const jsonPart = error.message.slice(error.message.indexOf(":") + 1).trim();
+      requiredClearance = JSON.parse(jsonPart)?.requiredClearance ?? null;
+    } catch {
+      // fall through with no specific clearance name
+    }
+    return (
+      <div className="max-w-md mx-auto px-6 py-16 text-center space-y-2">
+        <p className="font-display text-sm tracking-wide">Restricted</p>
+        <p className="text-sm text-muted-foreground">
+          {requiredClearance
+            ? `This page requires ${requiredClearance} clearance.`
+            : "You don't have access to this page."}
+        </p>
       </div>
     );
   }

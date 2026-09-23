@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Link as LinkIcon, FileText, Eye, ExternalLink, ScrollText, Check, Shield } from "lucide-react";
+import { Users, Link as LinkIcon, FileText, Eye, ExternalLink, ScrollText, Check, Shield, Radio, Megaphone, Plus, ClipboardCheck } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -40,6 +43,23 @@ interface StaffLink {
   title: string;
   url: string;
   icon: string;
+}
+
+interface SystemStatus {
+  discordBot: { online: boolean; lastSeenAt: string | null };
+  roblox: { online: boolean };
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+interface PendingAccessRequest {
+  id: string;
 }
 
 interface PolicyAcknowledgment {
@@ -97,14 +117,53 @@ function DirectoryRow({ link }: { link: StaffLink }) {
 export default function StaffHub() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [showViewers, setShowViewers] = useState<string | null>(null);
   const [showPolicyContent, setShowPolicyContent] = useState<string | null>(null);
   const [showOath, setShowOath] = useState(false);
+  const [showNewAnnouncement, setShowNewAnnouncement] = useState(false);
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementContent, setAnnouncementContent] = useState("");
 
-  // Staff clearance levels that can manage policies
-  const managerClearances = ["Staff Manager", "Executive", "Network Administrator", "Network Engineer"];
-  const canManage = !!user && managerClearances.includes(user.clearance);
+  const clearances = (user?.clearance || "").split(",").map((c) => c.trim()).filter(Boolean);
+  const canManage =
+    !!user && (clearances.includes("Staff Manager") || clearances.includes("Executive") || clearances.includes("Network Administrator") || clearances.includes("Network Engineer"));
   const hasSworn = !!user?.oathSwornAt;
+
+  const canPostAnnouncements =
+    clearances.includes("Executive") ||
+    clearances.includes("Network Administrator") ||
+    clearances.includes("Network Engineer");
+  const canSeeApprovals = clearances.includes("Network Engineer");
+
+  const { data: status } = useQuery<SystemStatus>({
+    queryKey: ["/api/status"],
+    refetchInterval: 30000,
+  });
+
+  const { data: announcements = [] } = useQuery<Announcement[]>({
+    queryKey: ["/api/announcements"],
+  });
+
+  const { data: pendingApprovals = [] } = useQuery<PendingAccessRequest[]>({
+    queryKey: ["/api/access-requests"],
+    enabled: canSeeApprovals,
+  });
+
+  const postAnnouncementMutation = useMutation({
+    mutationFn: async () =>
+      apiRequest("POST", "/api/announcements", { title: announcementTitle, content: announcementContent }),
+    onSuccess: () => {
+      toast({ title: "Posted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
+      setShowNewAnnouncement(false);
+      setAnnouncementTitle("");
+      setAnnouncementContent("");
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   const { data: staffOfTheMonth = null } = useQuery<StaffOfTheMonth | null>({
     queryKey: ["/api/staff-of-the-month"],
@@ -154,10 +213,7 @@ export default function StaffHub() {
   const readPolicies = policies.filter((p) => p.acknowledged);
   const viewingPolicy = policies.find((p) => p.id === showPolicyContent);
 
-  // Staff clearance levels that can access the Staff Hub
-  const staffClearances = ["Staff", "Application Reviewer", "Staff Manager", "Executive", "Network Administrator", "Network Engineer"];
-  
-  if (user && !staffClearances.includes(user.clearance)) {
+  if (user && clearances.length === 0) {
     return (
       <div className="container mx-auto max-w-md p-6">
         <Card className="overflow-hidden">
@@ -166,7 +222,7 @@ export default function StaffHub() {
             <Shield className="w-8 h-8 mx-auto text-muted-foreground" />
             <p className="font-display text-sm tracking-wide">Restricted</p>
             <p className="text-sm text-muted-foreground">
-              The Staff Hub requires Staff clearance or above.
+              The Staff Hub is reserved for Trial Moderators and above.
             </p>
           </CardContent>
         </Card>
@@ -192,6 +248,22 @@ export default function StaffHub() {
           Where GAW's staff take their oath, keep the decrees, and answer the call.
         </p>
       </div>
+
+      {/* Pending approvals — Network Engineers only */}
+      {canSeeApprovals && pendingApprovals.length > 0 && (
+        <div
+          className="flex items-center gap-3 rounded-md border border-accent bg-accent/10 px-4 py-3 cursor-pointer hover-elevate active-elevate-2"
+          onClick={() => setLocation("/developer-portal")}
+          data-testid="banner-pending-approvals"
+        >
+          <ClipboardCheck className="w-4 h-4 text-accent-foreground shrink-0" />
+          <p className="text-sm flex-1">
+            <span className="font-semibold">{pendingApprovals.length}</span>{" "}
+            access {pendingApprovals.length === 1 ? "change" : "changes"} awaiting your approval
+          </p>
+          <span className="text-xs text-muted-foreground">Review in Developer Portal →</span>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left rail */}
@@ -259,6 +331,32 @@ export default function StaffHub() {
             </CardContent>
           </Card>
 
+          {/* System status */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Radio className="w-4 h-4" />
+                <CardTitle className="font-display text-sm">Status</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Discord bot</span>
+                <span className="flex items-center gap-1.5" data-testid="status-discord-bot">
+                  <span className={`w-2 h-2 rounded-full ${status?.discordBot.online ? "bg-primary" : "bg-muted-foreground/40"}`} />
+                  {status?.discordBot.online ? "Online" : "Offline"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Roblox</span>
+                <span className="flex items-center gap-1.5" data-testid="status-roblox">
+                  <span className={`w-2 h-2 rounded-full ${status?.roblox.online ? "bg-primary" : "bg-muted-foreground/40"}`} />
+                  {status?.roblox.online ? "Online" : "Offline"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Staff of the month */}
           {staffOfTheMonth && (
             <Card className="overflow-hidden">
@@ -286,6 +384,38 @@ export default function StaffHub() {
 
         {/* Right column */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Announcements */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Megaphone className="w-4 h-4" />
+                <CardTitle className="font-display text-sm">Announcements</CardTitle>
+              </div>
+              {canPostAnnouncements && (
+                <Button size="sm" variant="outline" onClick={() => setShowNewAnnouncement(true)} data-testid="button-new-announcement">
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  New
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {announcements.length > 0 ? (
+                announcements.map((a) => (
+                  <div key={a.id} className="p-3 rounded-md border border-border" data-testid={`announcement-${a.id}`}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-medium text-sm">{a.title}</p>
+                      <p className="text-xs text-muted-foreground shrink-0">{new Date(a.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{a.content}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5">— {a.createdByName}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No announcements yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Directory */}
           <Card className="overflow-hidden">
             <CardHeader className="pb-3">
@@ -456,6 +586,41 @@ export default function StaffHub() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* New announcement dialog */}
+      <Dialog open={showNewAnnouncement} onOpenChange={setShowNewAnnouncement}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">New announcement</DialogTitle>
+            <DialogDescription>Visible to all staff on the Hub.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              value={announcementTitle}
+              onChange={(e) => setAnnouncementTitle(e.target.value)}
+              placeholder="Title"
+              data-testid="input-announcement-title"
+            />
+            <Textarea
+              value={announcementContent}
+              onChange={(e) => setAnnouncementContent(e.target.value)}
+              placeholder="What's going on?"
+              rows={4}
+              data-testid="input-announcement-content"
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setShowNewAnnouncement(false)}>Cancel</Button>
+            <Button
+              onClick={() => postAnnouncementMutation.mutate()}
+              disabled={!announcementTitle.trim() || !announcementContent.trim() || postAnnouncementMutation.isPending}
+              data-testid="button-post-announcement"
+            >
+              {postAnnouncementMutation.isPending ? "Posting..." : "Post"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Readers dialog */}
       <Dialog open={!!showViewers} onOpenChange={() => setShowViewers(null)}>

@@ -17,7 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Plus, FileText } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronDown, Plus, FileText, Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -26,21 +33,50 @@ interface PageSummary {
   key: string;
   title: string;
   category: string;
+  requiredClearance: string;
 }
+
+const NO_RESTRICTION = "none";
+
+const CLEARANCE_OPTIONS = [
+  { value: NO_RESTRICTION, label: "Anyone (no restriction)" },
+  { value: "Staff", label: "Staff" },
+  { value: "Application Reviewer", label: "Application Reviewer" },
+  { value: "Staff Manager", label: "Staff Manager" },
+  { value: "Executive", label: "Executive" },
+  { value: "Network Administrator", label: "Network Administrator" },
+  { value: "Network Engineer", label: "Network Engineer" },
+];
 
 /** One category's own dropdown button, e.g. "Orders ▾" with its pages inside. */
 function CategoryMenu({
   category,
   pages,
   canEdit,
+  userClearances,
   onAddPage,
 }: {
   category: string;
   pages: PageSummary[];
   canEdit: boolean;
+  userClearances: string[];
   onAddPage: (category: string) => void;
 }) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  function handleSelect(page: PageSummary, hasAccess: boolean) {
+    if (!hasAccess) {
+      toast({
+        title: "No access",
+        description: `You need ${page.requiredClearance} clearance to view "${page.title}".`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setLocation(`/pages/${page.key}`);
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -52,18 +88,21 @@ function CategoryMenu({
           <ChevronDown className="w-3.5 h-3.5" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-52">
-        {pages.map((page) => (
-          <DropdownMenuItem
-            key={page.key}
-            onSelect={() => setLocation(`/pages/${page.key}`)}
-            className="cursor-pointer"
-            data-testid={`nav-page-${page.key}`}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            {page.title}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align="start" className="w-56">
+        {pages.map((page) => {
+          const hasAccess = !page.requiredClearance || userClearances.includes(page.requiredClearance);
+          return (
+            <DropdownMenuItem
+              key={page.key}
+              onSelect={() => handleSelect(page, hasAccess)}
+              className={`cursor-pointer ${!hasAccess ? "text-destructive line-through opacity-70" : ""}`}
+              data-testid={`nav-page-${page.key}`}
+            >
+              {hasAccess ? <FileText className="w-4 h-4 mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+              {page.title}
+            </DropdownMenuItem>
+          );
+        })}
         {canEdit && (
           <>
             {pages.length > 0 && <DropdownMenuSeparator />}
@@ -86,6 +125,7 @@ export function PagesNav() {
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newRequiredClearance, setNewRequiredClearance] = useState(NO_RESTRICTION);
   const [targetCategory, setTargetCategory] = useState<string | null>(null);
 
   const clearances = (user?.clearance || "").split(",").map((c) => c.trim()).filter(Boolean);
@@ -107,7 +147,12 @@ export function PagesNav() {
   }, [pages]);
 
   const createMutation = useMutation({
-    mutationFn: async () => apiRequest("POST", "/api/pages", { title: newTitle, category: newCategory }),
+    mutationFn: async () =>
+      apiRequest("POST", "/api/pages", {
+        title: newTitle,
+        category: newCategory,
+        requiredClearance: newRequiredClearance === NO_RESTRICTION ? "" : newRequiredClearance,
+      }),
     onSuccess: (res: any) => {
       toast({ title: "Page added", description: `"${res.title}" was created under ${res.category}.` });
       queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
@@ -115,6 +160,7 @@ export function PagesNav() {
       setAddCategoryOpen(false);
       setNewTitle("");
       setNewCategory("");
+      setNewRequiredClearance(NO_RESTRICTION);
       setTargetCategory(null);
       setLocation(`/pages/${res.key}`);
     },
@@ -127,12 +173,14 @@ export function PagesNav() {
     setTargetCategory(category);
     setNewCategory(category);
     setNewTitle("");
+    setNewRequiredClearance(NO_RESTRICTION);
     setAddOpen(true);
   }
 
   function openAddCategory() {
     setNewCategory("");
     setNewTitle("");
+    setNewRequiredClearance(NO_RESTRICTION);
     setAddCategoryOpen(true);
   }
 
@@ -146,6 +194,7 @@ export function PagesNav() {
           category={category}
           pages={categoryPages}
           canEdit={canEdit}
+          userClearances={clearances}
           onAddPage={openAddPage}
         />
       ))}
@@ -161,19 +210,36 @@ export function PagesNav() {
         </button>
       )}
 
-      {/* Add a page into an existing category (title comes from the category's own "Add page" item) */}
+      {/* Add a page into an existing category */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add a page to {targetCategory}</DialogTitle>
             <DialogDescription>This page will appear under the "{targetCategory}" menu.</DialogDescription>
           </DialogHeader>
-          <Input
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Page title"
-            data-testid="input-new-page-title"
-          />
+          <div className="space-y-3">
+            <Input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Page title"
+              data-testid="input-new-page-title"
+            />
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Who can view this page?</label>
+              <Select value={newRequiredClearance} onValueChange={setNewRequiredClearance}>
+                <SelectTrigger data-testid="select-page-clearance">
+                  <SelectValue placeholder="Anyone (no restriction)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLEARANCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button
@@ -209,6 +275,21 @@ export function PagesNav() {
               placeholder="First page title"
               data-testid="input-new-category-page-title"
             />
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Who can view this page?</label>
+              <Select value={newRequiredClearance} onValueChange={setNewRequiredClearance}>
+                <SelectTrigger data-testid="select-category-page-clearance">
+                  <SelectValue placeholder="Anyone (no restriction)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLEARANCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="outline" onClick={() => setAddCategoryOpen(false)}>Cancel</Button>

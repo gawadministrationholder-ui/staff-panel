@@ -315,6 +315,7 @@ export const customPages = pgTable("custom_pages", {
   key: text("key").primaryKey(),
   title: text("title").notNull().default(""),
   category: text("category").notNull().default("General"),
+  requiredClearance: text("required_clearance").notNull().default(""),
   blocks: text("blocks").notNull().default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

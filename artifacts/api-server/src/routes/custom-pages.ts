@@ -16,6 +16,19 @@ function slugify(title: string): string {
   return base || "page";
 }
 
+const ASSIGNABLE_CLEARANCES = [
+  "Staff",
+  "Application Reviewer",
+  "Staff Manager",
+  "Executive",
+  "Network Administrator",
+  "Network Engineer",
+];
+
+function cleanClearance(value: unknown): string {
+  return typeof value === "string" && ASSIGNABLE_CLEARANCES.includes(value) ? value : "";
+}
+
 function canEditPages(req: Request): boolean {
   const clearances = parseClearances(req.user!.clearance);
   return clearances.includes("Network Engineer") || clearances.includes("Network Administrator");
@@ -44,6 +57,7 @@ router.post("/pages", requireAuth, async (req: Request, res: Response) => {
     }
     const cleanCategory =
       typeof category === "string" && category.trim() && category.length <= 60 ? category.trim() : "General";
+    const requiredClearance = cleanClearance(req.body.requiredClearance);
 
     const existing = await storage.listCustomPages();
     const taken = new Set(existing.map((p) => p.key));
@@ -54,9 +68,9 @@ router.post("/pages", requireAuth, async (req: Request, res: Response) => {
       suffix++;
     }
 
-    await storage.createCustomPage(key, title.trim(), cleanCategory, req.user!.id);
+    await storage.createCustomPage(key, title.trim(), cleanCategory, requiredClearance, req.user!.id);
     logger.info({ page: key, category: cleanCategory, by: req.user!.robloxUsername }, "Custom page created");
-    res.json({ key, title: title.trim(), category: cleanCategory });
+    res.json({ key, title: title.trim(), category: cleanCategory, requiredClearance });
   } catch (error: any) {
     logger.error({ error }, "Failed to create custom page");
     res.status(500).json({ error: error.message });
@@ -77,11 +91,19 @@ router.delete("/pages/:key", requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-router.get("/pages/:key", async (req: Request, res: Response) => {
+router.get("/pages/:key", requireAuth, async (req: Request, res: Response) => {
   try {
     const page = await storage.getCustomPage(req.params.key);
     if (!page) return res.status(404).json({ error: "Page not found" });
-    res.json({ key: req.params.key, title: page.title, html: page.blocks || "" });
+
+    if (page.requiredClearance) {
+      const clearances = parseClearances(req.user!.clearance);
+      if (!clearances.includes(page.requiredClearance)) {
+        return res.status(403).json({ error: `Requires ${page.requiredClearance} clearance`, requiredClearance: page.requiredClearance });
+      }
+    }
+
+    res.json({ key: req.params.key, title: page.title, html: page.blocks || "", requiredClearance: page.requiredClearance });
   } catch (error: any) {
     logger.error({ error }, "Failed to load custom page");
     res.status(500).json({ error: error.message });
@@ -97,7 +119,7 @@ router.put("/pages/:key", requireAuth, async (req: Request, res: Response) => {
     const existingPage = await storage.getCustomPage(req.params.key);
     if (!existingPage) return res.status(404).json({ error: "Page not found — create it first" });
 
-    const { title, html } = req.body;
+    const { title, html, requiredClearance } = req.body;
     if (title !== undefined && (typeof title !== "string" || title.length > 120)) {
       return res.status(400).json({ error: "Invalid title" });
     }
@@ -108,6 +130,7 @@ router.put("/pages/:key", requireAuth, async (req: Request, res: Response) => {
       typeof title === "string" && title.trim() ? title : existingPage.title,
       cleanHtml,
       req.user!.id,
+      requiredClearance !== undefined ? cleanClearance(requiredClearance) : undefined,
     );
 
     logger.info({ page: req.params.key, by: req.user!.robloxUsername }, "Custom page updated");

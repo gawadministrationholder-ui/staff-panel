@@ -357,37 +357,47 @@ export class PostgresStorage {
 
   // ── Custom Pages ─────────────────────────────────────────────────────────
 
-  async getCustomPage(key: string): Promise<{ key: string; title: string; blocks: string } | undefined> {
+  async getCustomPage(
+    key: string,
+  ): Promise<{ key: string; title: string; blocks: string; requiredClearance: string } | undefined> {
     const rows = await db
       .select({
         key: schema.customPages.key,
         title: schema.customPages.title,
         blocks: schema.customPages.blocks,
+        requiredClearance: schema.customPages.requiredClearance,
       })
       .from(schema.customPages)
       .where(eq(schema.customPages.key, key));
     return rows[0];
   }
 
-  async upsertCustomPage(key: string, title: string, blocks: string, updatedBy: string): Promise<void> {
+  async upsertCustomPage(key: string, title: string, blocks: string, updatedBy: string, requiredClearance?: string): Promise<void> {
+    const set: Record<string, unknown> = { title, blocks, updatedBy, updatedAt: new Date() };
+    if (requiredClearance !== undefined) set.requiredClearance = requiredClearance;
     await db
       .insert(schema.customPages)
-      .values({ key, title, blocks, updatedBy, updatedAt: new Date() })
+      .values({ key, title, blocks, updatedBy, requiredClearance: requiredClearance ?? "", updatedAt: new Date() })
       .onConflictDoUpdate({
         target: schema.customPages.key,
-        set: { title, blocks, updatedBy, updatedAt: new Date() },
+        set,
       });
   }
 
-  async listCustomPages(): Promise<{ key: string; title: string; category: string }[]> {
+  async listCustomPages(): Promise<{ key: string; title: string; category: string; requiredClearance: string }[]> {
     return db
-      .select({ key: schema.customPages.key, title: schema.customPages.title, category: schema.customPages.category })
+      .select({
+        key: schema.customPages.key,
+        title: schema.customPages.title,
+        category: schema.customPages.category,
+        requiredClearance: schema.customPages.requiredClearance,
+      })
       .from(schema.customPages)
       .orderBy(schema.customPages.category, schema.customPages.createdAt);
   }
 
-  async createCustomPage(key: string, title: string, category: string, createdBy: string): Promise<void> {
-    await db.insert(schema.customPages).values({ key, title, category, blocks: "[]", updatedBy: createdBy });
+  async createCustomPage(key: string, title: string, category: string, requiredClearance: string, createdBy: string): Promise<void> {
+    await db.insert(schema.customPages).values({ key, title, category, requiredClearance, blocks: "[]", updatedBy: createdBy });
   }
 
   async deleteCustomPage(key: string): Promise<void> {

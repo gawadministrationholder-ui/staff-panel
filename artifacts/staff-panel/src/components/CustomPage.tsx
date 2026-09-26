@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,121 +6,13 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import {
-  Pencil,
-  Save,
-  X,
-  Trash,
-  Bold,
-  Italic,
-  Underline,
-  Heading1,
-  Heading2,
-  List,
-  ListOrdered,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Quote,
-} from "lucide-react";
+import { Pencil, Save, X, Trash } from "lucide-react";
+import FreeformEditor from "@/components/FreeformEditor";
 
 interface PageData {
   key: string;
   title: string;
   html: string;
-}
-
-/** One toolbar button that runs a document.execCommand rich-text action. */
-function ToolbarButton({
-  icon: Icon,
-  onClick,
-  label,
-}: {
-  icon: typeof Bold;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      // mousedown + preventDefault keeps focus (and the text selection) in
-      // the editable area — a click would steal focus first and the command
-      // would apply to nothing.
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
-      className="p-2 rounded hover-elevate active-elevate-2 text-muted-foreground"
-    >
-      <Icon className="w-4 h-4" />
-    </button>
-  );
-}
-
-/** A Google-Docs-style toolbar + contentEditable body. */
-function RichTextEditor({
-  html,
-  onChange,
-}: {
-  html: string;
-  onChange: (html: string) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const loadedHtml = useRef<string | null>(null);
-
-  // Only write into the DOM when the page we're editing changes — never on
-  // every keystroke, or the cursor would jump to the start on each render.
-  useEffect(() => {
-    if (ref.current && loadedHtml.current !== html) {
-      ref.current.innerHTML = html;
-      loadedHtml.current = html;
-    }
-  }, [html]);
-
-  function exec(command: string, value?: string) {
-    document.execCommand(command, false, value);
-    ref.current?.focus();
-    onChange(ref.current?.innerHTML ?? "");
-  }
-
-  function insertLink() {
-    const url = window.prompt("Link URL (https://...)");
-    if (url && /^https?:\/\//i.test(url)) exec("createLink", url);
-  }
-
-  function insertImage() {
-    const url = window.prompt("Image URL (https://...)");
-    if (url && /^https?:\/\//i.test(url)) exec("insertImage", url);
-  }
-
-  return (
-    <div className="rounded-md border border-border overflow-hidden">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/40 px-2 py-1">
-        <ToolbarButton icon={Bold} label="Bold" onClick={() => exec("bold")} />
-        <ToolbarButton icon={Italic} label="Italic" onClick={() => exec("italic")} />
-        <ToolbarButton icon={Underline} label="Underline" onClick={() => exec("underline")} />
-        <div className="w-px h-5 bg-border mx-1" />
-        <ToolbarButton icon={Heading1} label="Heading" onClick={() => exec("formatBlock", "h1")} />
-        <ToolbarButton icon={Heading2} label="Subheading" onClick={() => exec("formatBlock", "h2")} />
-        <ToolbarButton icon={Quote} label="Quote" onClick={() => exec("formatBlock", "blockquote")} />
-        <div className="w-px h-5 bg-border mx-1" />
-        <ToolbarButton icon={List} label="Bullet list" onClick={() => exec("insertUnorderedList")} />
-        <ToolbarButton icon={ListOrdered} label="Numbered list" onClick={() => exec("insertOrderedList")} />
-        <div className="w-px h-5 bg-border mx-1" />
-        <ToolbarButton icon={LinkIcon} label="Insert link" onClick={insertLink} />
-        <ToolbarButton icon={ImageIcon} label="Insert image" onClick={insertImage} />
-      </div>
-      <div
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => onChange(ref.current?.innerHTML ?? "")}
-        onBlur={() => onChange(ref.current?.innerHTML ?? "")}
-        className="prose-page min-h-[50vh] px-6 py-5 focus:outline-none"
-        data-testid="rich-text-editor"
-      />
-    </div>
-  );
 }
 
 export default function CustomPage({ pageKey }: { pageKey: string }) {
@@ -221,7 +113,7 @@ export default function CustomPage({ pageKey }: { pageKey: string }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className={`mx-auto px-6 py-10 ${editing ? "max-w-5xl" : "max-w-3xl"}`}>
       <div className="flex items-start justify-between gap-4 mb-6">
         {editing ? (
           <Input
@@ -277,7 +169,7 @@ export default function CustomPage({ pageKey }: { pageKey: string }) {
       </div>
 
       {editing ? (
-        <RichTextEditor html={draftHtml} onChange={setDraftHtml} />
+        <FreeformEditor html={draftHtml} onChange={setDraftHtml} />
       ) : page?.html ? (
         <div
           className="prose-page"
